@@ -1,0 +1,24 @@
+{
+  "users": [
+    {
+      "healthid": "111111111111",
+      "name": "alpha",
+      "dob": "2004-01-01",
+      "bloodGroup": "AB-",
+      "mobile": "1111111111",
+      "emergencyContact": "1111111110",
+      "allergies": "nill",
+      "medicalHistory": "no"
+    },
+    {
+      "healthid": "160120049090",
+      "name": "Ashrith Manchala",
+      "dob": "2004-01-01",
+      "bloodGroup": "O+",
+      "mobile": "9392799090",
+      "emergencyContact": "9030087333",
+      "allergies": "cold",
+      "medicalHistory": "Tronsils"
+    }
+  ]
+}

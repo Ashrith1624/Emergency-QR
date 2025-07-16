@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Emergency QR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2196F3;
+            --primary-dark: #1769aa;
+            --accent: #FF5722;
+            --background: linear-gradient(135deg, #e3f0ff 0%, #f9e7ff 100%);
+            --glass: rgba(255,255,255,0.85);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+            --border-radius: 18px;
+            --input-bg: #f7fafd;
+            --input-border: #e0e7ef;
+            --error: #ff7043;
+            --success: #43a047;
+        }
+        body {
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            background: var(--background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.4s;
+        }
+        .login-container {
+            background: var(--glass);
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            padding: 48px 36px 36px 36px;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: background 0.4s, box-shadow 0.4s;
+        }
+        h2 {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 18px;
+            letter-spacing: 0.5px;
+        }
+        form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        label {
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #222;
+            font-size: 1.05em;
+        }
+        .input-group {
+            position: relative;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px 12px 40px;
+            border-radius: 10px;
+            border: 1.5px solid var(--input-border);
+            background: var(--input-bg);
+            font-size: 1.08em;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+        .input-group .icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+            color: #b0b8c1;
+            pointer-events: none;
+        }
+        button[type="submit"], #modeToggleBtn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 0;
+            font-size: 1.13em;
+            font-weight: 600;
+            margin-top: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(33,150,243,0.08);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        button[type="submit"]:hover, #modeToggleBtn:hover {
+            background: var(--primary-dark);
+        }
+        .toggle-link {
+            color: var(--accent);
+            margin-top: 18px;
+            cursor: pointer;
+            font-size: 1.05em;
+            text-align: center;
+            transition: color 0.2s;
+        }
+        .toggle-link:hover {
+            color: var(--primary);
+        }
+        .error-message {
+            color: var(--error);
+            font-size: 0.98em;
+            margin-top: 2px;
+            text-align: left;
+            min-height: 18px;
+            transition: color 0.2s;
+        }
+        .success-message {
+            color: var(--success);
+            font-size: 0.98em;
+            margin-top: 2px;
+            text-align: left;
+            min-height: 18px;
+            transition: color 0.2s;
+        }
+        #loginSuccessAnim {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: scale(0.98); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .spinner {
+            border: 6px solid #eee;
+            border-top: 6px solid var(--primary);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Dark mode */
+        body.dark-mode {
+            background: linear-gradient(135deg, #23272f 0%, #2c2c3a 100%) !important;
+        }
+        .login-container.dark-mode {
+            background: rgba(40,44,52,0.95) !important;
+            color: #fff !important;
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.25);
+        }
+        .login-container.dark-mode label {
+            color: #e0e0e0;
+        }
+        .login-container.dark-mode .input-group input {
+            background: #23272f;
+            color: #fff;
+            border-color: #444;
+        }
+        .login-container.dark-mode .input-group input:focus {
+            border-color: var(--primary);
+        }
+        .login-container.dark-mode .icon {
+            color: #888;
+        }
+        .login-container.dark-mode .error-message {
+            color: #ffb199;
+        }
+        .login-container.dark-mode .success-message {
+            color: #b1ffb1;
+        }
+        @media (max-width: 600px) {
+            .login-container {
+                padding: 32px 8vw 24px 8vw;
+                max-width: 98vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Add dark mode toggle button -->
+    <div style="position: absolute; top: 20px; right: 30px; z-index: 10;">
+        <button id="modeToggleBtn">🌞 Light Mode</button>
+    </div>
+    <div class="login-container" id="loginContainer">
+        <h2 id="formTitle">Login</h2>
+        <form id="loginForm">
+            <div id="registerFields" style="display:none;">
+                <label for="registerHealthId">Health ID:</label>
+                <div class="input-group">
+                    <span class="icon">👤</span>
+                    <input type="text" id="registerHealthId" name="registerHealthId" required pattern="\d{12}" maxlength="12" minlength="12" title="Health ID must be exactly 12 digits" autocomplete="off">
+                </div>
+                <span class="helper-text">Enter your 12-digit Health ID (digits only).</span>
+                <span class="error-message" id="registerHealthIdError" style="display:none"></span>
+                <label for="registerPassword">Password:</label>
+                <div class="input-group">
+                    <span class="icon">🔒</span>
+                    <input type="password" id="registerPassword" name="registerPassword" required autocomplete="off">
+                </div>
+                <span class="helper-text">Password must be at least 6 characters.</span>
+                <span class="error-message" id="registerPasswordError" style="display:none"></span>
+                <label for="registerConfirmPassword">Confirm Password:</label>
+                <div class="input-group">
+                    <span class="icon">🔒</span>
+                    <input type="password" id="registerConfirmPassword" name="registerConfirmPassword" required autocomplete="off">
+                </div>
+                <span class="error-message" id="registerConfirmPasswordError" style="display:none"></span>
+            </div>
+            <div id="loginFields">
+                <label for="loginHealthId">Health ID:</label>
+                <div class="input-group">
+                    <span class="icon">👤</span>
+                    <input type="text" id="loginHealthId" name="loginHealthId" required pattern="\d{12}" maxlength="12" minlength="12" title="Health ID must be exactly 12 digits" autocomplete="off">
+                </div>
+                <span class="helper-text">Enter your 12-digit Health ID (digits only).</span>
+                <span class="error-message" id="loginHealthIdError" style="display:none"></span>
+                <label for="loginPassword">Password:</label>
+                <div class="input-group">
+                    <span class="icon">🔒</span>
+                    <input type="password" id="loginPassword" name="loginPassword" required autocomplete="off">
+                </div>
+                <span class="error-message" id="loginPasswordError" style="display:none"></span>
+            </div>
+            <div class="error-message" id="errorMsg"></div>
+            <div class="success-message" id="successMsg" style="display:none;color:var(--success);text-align:center;margin-top:8px;font-weight:600;"></div>
+            <button type="submit" id="submitBtn">Login</button>
+        </form>
+        <span class="toggle-link" id="toggleForm">New user? Register here</span>
+        <!-- Add Admin Login toggle -->
+        <span class="toggle-link" id="adminLoginToggle">Admin Login</span>
+        <div id="adminLoginFields" style="display:none;">
+            <label for="adminUsername">Admin Username:</label>
+            <div class="input-group">
+                <span class="icon">🛡️</span>
+                <input type="text" id="adminUsername" name="adminUsername" autocomplete="off">
+            </div>
+            <label for="adminPassword">Admin Password:</label>
+            <div class="input-group">
+                <span class="icon">🔒</span>
+                <input type="password" id="adminPassword" name="adminPassword" autocomplete="off">
+            </div>
+            <div class="error-message" id="adminErrorMsg"></div>
+            <button type="button" id="adminLoginBtn">Login as Admin</button>
+        </div>
+    </div>
+    <div id="loginSuccessAnim" style="display:none; justify-content:center; align-items:center; flex-direction:column; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.95); z-index:9999;">
+        <div style="font-size:2em; color:#2196F3; margin-bottom:20px;">Login Successful!</div>
+        <div class="spinner"></div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Dark mode toggle
+        const modeToggleBtn = document.getElementById('modeToggleBtn');
+        function setMode(mode) {
+            if (mode === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.querySelector('.login-container').classList.add('dark-mode');
+                modeToggleBtn.textContent = '🌙 Dark Mode';
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.querySelector('.login-container').classList.remove('dark-mode');
+                modeToggleBtn.textContent = '🌞 Light Mode';
+            }
+            localStorage.setItem('colorMode', mode);
+        }
+        modeToggleBtn.addEventListener('click', () => {
+            const current = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            setMode(current === 'dark' ? 'light' : 'dark');
+        });
+        setMode(localStorage.getItem('colorMode') || 'light');
+
+        // Animate toggle between login/register
+        const toggleForm = document.getElementById('toggleForm');
+        const formTitle = document.getElementById('formTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const loginFields = document.getElementById('loginFields');
+        const registerFields = document.getElementById('registerFields');
+        let isRegister = false;
+        toggleForm.addEventListener('click', () => {
+            isRegister = !isRegister;
+            if (isRegister) {
+                formTitle.textContent = 'Register';
+                submitBtn.textContent = 'Register';
+                registerFields.style.display = '';
+                loginFields.style.display = 'none';
+                toggleForm.textContent = 'Already have an account? Login here';
+                document.getElementById('registerHealthId').required = true;
+                document.getElementById('registerPassword').required = true;
+                document.getElementById('registerConfirmPassword').required = true;
+                document.getElementById('loginHealthId').required = false;
+                document.getElementById('loginPassword').required = false;
+                registerFields.style.animation = 'fadeIn 0.4s';
+            } else {
+                formTitle.textContent = 'Login';
+                submitBtn.textContent = 'Login';
+                registerFields.style.display = 'none';
+                loginFields.style.display = '';
+                toggleForm.textContent = 'New user? Register here';
+                document.getElementById('registerHealthId').required = false;
+                document.getElementById('registerPassword').required = false;
+                document.getElementById('registerConfirmPassword').required = false;
+                document.getElementById('loginHealthId').required = true;
+                document.getElementById('loginPassword').required = true;
+                loginFields.style.animation = 'fadeIn 0.4s';
+            }
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+        });
+        // On page load, set required for login fields only
+        document.getElementById('registerHealthId').required = false;
+        document.getElementById('registerPassword').required = false;
+        document.getElementById('registerConfirmPassword').required = false;
+        document.getElementById('loginHealthId').required = true;
+        document.getElementById('loginPassword').required = true;
+
+        // Strictly enforce only digits in Health ID fields (register and login) and show live error
+        function enforceDigitsOnly(e, errorElem) {
+            const original = e.target.value;
+            const filtered = original.replace(/\D/g, '');
+            if (original !== filtered) {
+                e.target.value = filtered;
+            }
+            // Show/hide error message
+            if (filtered.length !== 12) {
+                errorElem.textContent = 'Health ID must be exactly 12 digits.';
+                errorElem.style.display = 'block';
+            } else {
+                errorElem.textContent = '';
+                errorElem.style.display = 'none';
+            }
+        }
+        var regHealthId = document.getElementById('registerHealthId');
+        var regHealthIdError = document.getElementById('registerHealthIdError');
+        var loginHealthId = document.getElementById('loginHealthId');
+        var loginHealthIdError = document.getElementById('loginHealthIdError');
+        if (regHealthId) regHealthId.addEventListener('input', function(e) { enforceDigitsOnly(e, regHealthIdError); });
+        if (loginHealthId) loginHealthId.addEventListener('input', function(e) { enforceDigitsOnly(e, loginHealthIdError); });
+
+        // Real-time validation for registration fields
+        const regPassword = document.getElementById('registerPassword');
+        const regPasswordError = document.getElementById('registerPasswordError');
+        const regConfirmPassword = document.getElementById('registerConfirmPassword');
+        const regConfirmPasswordError = document.getElementById('registerConfirmPasswordError');
+        function validateRegHealthId() {
+            const val = regHealthId.value;
+            if (!/^\d{12}$/.test(val)) {
+                regHealthIdError.textContent = 'Health ID must be exactly 12 digits.';
+                regHealthIdError.style.display = 'block';
+                return false;
+            } else {
+                regHealthIdError.textContent = '';
+                regHealthIdError.style.display = 'none';
+                return true;
+            }
+        }
+        function validateRegPassword() {
+            const val = regPassword.value;
+            if (val.length < 6) {
+                regPasswordError.textContent = 'Password must be at least 6 characters.';
+                regPasswordError.style.display = 'block';
+                return false;
+            } else {
+                regPasswordError.textContent = '';
+                regPasswordError.style.display = 'none';
+                return true;
+            }
+        }
+        function validateRegConfirmPassword() {
+            if (regPassword.value !== regConfirmPassword.value) {
+                regConfirmPasswordError.textContent = 'Passwords do not match.';
+                regConfirmPasswordError.style.display = 'block';
+                return false;
+            } else {
+                regConfirmPasswordError.textContent = '';
+                regConfirmPasswordError.style.display = 'none';
+                return true;
+            }
+        }
+        if (regHealthId) regHealthId.addEventListener('input', validateRegHealthId);
+        if (regPassword) regPassword.addEventListener('input', validateRegPassword);
+        if (regConfirmPassword) regConfirmPassword.addEventListener('input', validateRegConfirmPassword);
+        // Real-time validation for login fields
+        const loginPassword = document.getElementById('loginPassword');
+        const loginPasswordError = document.getElementById('loginPasswordError');
+        function validateLoginHealthId() {
+            const val = loginHealthId.value;
+            if (!/^\d{12}$/.test(val)) {
+                loginHealthIdError.textContent = 'Health ID must be exactly 12 digits.';
+                loginHealthIdError.style.display = 'block';
+                return false;
+            } else {
+                loginHealthIdError.textContent = '';
+                loginHealthIdError.style.display = 'none';
+                return true;
+            }
+        }
+        function validateLoginPassword() {
+            const val = loginPassword.value;
+            if (val.length < 6) {
+                loginPasswordError.textContent = 'Password must be at least 6 characters.';
+                loginPasswordError.style.display = 'block';
+                return false;
+            } else {
+                loginPasswordError.textContent = '';
+                loginPasswordError.style.display = 'none';
+                return true;
+            }
+        }
+        if (loginHealthId) loginHealthId.addEventListener('input', validateLoginHealthId);
+        if (loginPassword) loginPassword.addEventListener('input', validateLoginPassword);
+
+        // Login/register logic
+        const loginForm = document.getElementById('loginForm');
+        const errorMsg = document.getElementById('errorMsg');
+        const successMsg = document.getElementById('successMsg');
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            let valid = true;
+            if (isRegister) {
+                if (!validateRegHealthId()) valid = false;
+                if (!validateRegPassword()) valid = false;
+                if (!validateRegConfirmPassword()) valid = false;
+                if (!valid) {
+                    e.preventDefault();
+                    errorMsg.textContent = 'Please fix the errors above.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                // Registration logic
+                const healthid = document.getElementById('registerHealthId').value.trim();
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('registerConfirmPassword').value;
+                if (!healthid || !password || !confirmPassword) {
+                    errorMsg.textContent = 'All fields are required.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                if (!/^\d{12}$/.test(healthid)) {
+                    errorMsg.textContent = 'Health ID must be exactly 12 digits (no letters, spaces, or symbols).';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                if (password !== confirmPassword) {
+                    errorMsg.textContent = 'Passwords do not match.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                let users = JSON.parse(localStorage.getItem('users') || '{}');
+                if (users[healthid]) {
+                    errorMsg.textContent = 'Health ID already exists.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                users[healthid] = password;
+                localStorage.setItem('users', JSON.stringify(users));
+                errorMsg.textContent = 'Registration successful! Please login.';
+                errorMsg.style.color = '#2196F3';
+                errorMsg.style.display = 'block';
+                successMsg.textContent = 'Registration successful! Please login.';
+                successMsg.style.display = 'block';
+                setTimeout(() => {
+                    toggleForm.click();
+                    errorMsg.style.color = '#ff7043';
+                }, 1200);
+            } else {
+                // Login logic
+                const healthid = document.getElementById('loginHealthId').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                let users = JSON.parse(localStorage.getItem('users') || '{}');
+                if (!users[healthid] || users[healthid] !== password) {
+                    errorMsg.textContent = 'Invalid Health ID or password.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                // Successful login
+                // Save healthid to localStorage for session
+                localStorage.setItem('healthid', healthid);
+                // Animate transition
+                const loginContainer = document.getElementById('loginContainer');
+                const loginSuccessAnim = document.getElementById('loginSuccessAnim');
+                loginContainer.style.animation = 'fadeOut 0.5s forwards';
+                setTimeout(() => {
+                    loginContainer.style.display = 'none';
+                    loginSuccessAnim.style.display = 'flex';
+                    // Redirect after short delay
+                    setTimeout(() => {
+                        window.location.href = 'qr.html';
+                    }, 1200);
+                }, 500);
+            }
+        });
+
+        // Admin Login Toggle Logic
+        const adminLoginToggle = document.getElementById('adminLoginToggle');
+        const adminLoginFields = document.getElementById('adminLoginFields');
+        adminLoginToggle.addEventListener('click', function() {
+            adminLoginFields.style.display = 'block';
+            loginFields.style.display = 'none';
+            registerFields.style.display = 'none';
+            toggleForm.style.display = 'none';
+            adminLoginToggle.style.display = 'none';
+        });
+        // Admin Login Logic (demo: username 'admin', password 'admin123')
+        const adminLoginBtn = document.getElementById('adminLoginBtn');
+        const adminUsername = document.getElementById('adminUsername');
+        const adminPassword = document.getElementById('adminPassword');
+        const adminErrorMsg = document.getElementById('adminErrorMsg');
+        adminLoginBtn.addEventListener('click', function() {
+            if (adminUsername.value === 'admin' && adminPassword.value === 'admin123') {
+                window.location.href = 'admin-dashboard.html';
+            } else {
+                adminErrorMsg.textContent = 'Invalid admin credentials.';
+            }
+        });
+    });
+    </script>
+</body>
+</html> 

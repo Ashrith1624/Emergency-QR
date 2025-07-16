@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Emergency QR Code Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2196F3;
+            --primary-dark: #1769aa;
+            --accent: #FF5722;
+            --background: linear-gradient(135deg, #e3f0ff 0%, #f9e7ff 100%);
+            --glass: rgba(255,255,255,0.85);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+            --border-radius: 18px;
+            --input-bg: #f7fafd;
+            --input-border: #e0e7ef;
+            --error: #ff7043;
+            --success: #43a047;
+            --step-active: #2196F3;
+            --step-inactive: #b0b8c1;
+        }
+        body {
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            background: var(--background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.4s;
+        }
+        .container {
+            background: var(--glass);
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            padding: 48px 36px 36px 36px;
+            width: 100%;
+            max-width: 540px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: background 0.4s, box-shadow 0.4s;
+            margin-top: 70px;
+        }
+        h2 {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 18px;
+            letter-spacing: 0.5px;
+        }
+        .stepper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 32px;
+        }
+        .step {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--step-inactive);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: background 0.3s;
+        }
+        .step.active {
+            background: var(--step-active);
+            box-shadow: 0 2px 8px rgba(33,150,243,0.12);
+        }
+        .form-step {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .form-step.active {
+            display: block;
+            opacity: 1;
+        }
+        label {
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #222;
+            font-size: 1.05em;
+        }
+        input, select, textarea, button {
+            width: 100%;
+            padding: 12px 16px;
+            margin-top: 5px;
+            border-radius: 10px;
+            border: 1.5px solid var(--input-border);
+            background: var(--input-bg);
+            font-size: 1.08em;
+            outline: none;
+            transition: border 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+        }
+        button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 0;
+            font-size: 1.13em;
+            font-weight: 600;
+            margin-top: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(33,150,243,0.08);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            background: var(--primary-dark);
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 16px;
+        }
+        .error-message {
+            color: var(--error);
+            font-size: 0.98em;
+            margin-top: 2px;
+            text-align: left;
+            min-height: 18px;
+            transition: color 0.2s;
+        }
+        .canvas-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .canvas-container canvas {
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            max-width: 100%;
+            margin-bottom: 12px;
+        }
+        .download-btn {
+            margin-top: 12px;
+            display: none;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+        }
+        .panic-btn {
+            background-color: var(--error);
+            padding: 15px;
+            width: 100%;
+            margin-top: 30px;
+            color: white;
+            font-size: 1.13em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 600;
+        }
+        .panic-btn:hover {
+            background-color: #d50000;
+        }
+        /* Profile/Logout/Mode area */
+        .topbar {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            z-index: 1000;
+        }
+        .profile-btn, .logout-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.8em;
+            transition: color 0.2s;
+        }
+        .profile-btn:hover, .logout-btn:hover {
+            color: var(--primary);
+        }
+        .profile-dropdown {
+            display: none;
+            position: absolute;
+            top: 48px;
+            right: 0;
+            background: #fff;
+            color: #333;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            padding: 16px 24px;
+            min-width: 200px;
+            z-index: 1001;
+            font-size: 1.05em;
+        }
+        .profile-dropdown span {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        #modeToggleBtn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        #modeToggleBtn:hover {
+            background: var(--primary-dark);
+        }
+        /* Dark mode */
+        body.dark-mode {
+            background: linear-gradient(135deg, #23272f 0%, #2c2c3a 100%) !important;
+        }
+        .container.dark-mode {
+            background: rgba(40,44,52,0.95) !important;
+            color: #fff !important;
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.25);
+        }
+        .container.dark-mode label {
+            color: #e0e0e0;
+        }
+        .container.dark-mode input,
+        .container.dark-mode select,
+        .container.dark-mode textarea {
+            background: #23272f;
+            color: #fff;
+            border-color: #444;
+        }
+        .container.dark-mode input:focus,
+        .container.dark-mode select:focus,
+        .container.dark-mode textarea:focus {
+            border-color: var(--primary);
+        }
+        .container.dark-mode .error-message {
+            color: #ffb199;
+        }
+        .profile-dropdown.dark-mode {
+            background: #23272f;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .topbar-fixed {
+            position: fixed;
+            top: 18px;
+            right: 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            z-index: 2000;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 2px 12px 0 rgba(31,38,135,0.10);
+            border-radius: 14px;
+            padding: 8px 18px;
+        }
+        body.dark-mode .topbar-fixed {
+            background: rgba(40,44,52,0.98);
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.18);
+        }
+        @media (max-width: 700px) {
+            .container {
+                padding: 32px 4vw 24px 4vw;
+                max-width: 98vw;
+            }
+            .topbar {
+                right: 10px;
+                top: 10px;
+            }
+            .topbar-fixed {
+                right: 8px;
+                top: 8px;
+                padding: 6px 8px;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Move topbar outside container -->
+    <div class="topbar-fixed">
+        <button id="profileIconBtn" class="profile-btn" title="Profile">👤</button>
+        <div id="profileDropdown" class="profile-dropdown">
+            <div><b>Health ID:</b> <span id="profileHealthId"></span></div>
+        </div>
+        <button id="logoutBtn" class="logout-btn" title="Logout">🚪</button>
+        <button id="modeToggleBtn">🌞 Light Mode</button>
+    </div>
+    <div class="container">
+        <h2>Generate Your Emergency QR Code</h2>
+        <div class="stepper">
+            <div class="step" id="step-0">1</div>
+            <div class="step" id="step-1">2</div>
+            <div class="step" id="step-2">3</div>
+        </div>
+        <form id="qrForm" style="width:100%;">
+            <!-- Step 1 -->
+            <div class="form-step active">
+                <label for="name">Full Name:</label>
+                <input type="text" id="name" name="name" placeholder="Enter your full name" required autocomplete="off" pattern="[A-Za-z. ]+">
+                <span class="helper-text">Enter your full legal name.</span>
+                <span class="error-message" id="nameError" style="display:none"></span>
+                <label for="dob">Date of Birth:</label>
+                <input type="date" id="dob" name="dob" required max="{{today}}">
+                <span class="helper-text">Date of Birth is required.</span>
+                <span class="error-message" id="dobError" style="display:none"></span>
+                <div id="ageDisplay" style="margin-top:4px;font-size:1.05em;color:var(--primary);font-weight:500;"></div>
+                <label for="bloodGroup">Blood Group:</label>
+                <select id="bloodGroup" name="bloodGroup" required>
+                    <option value="" disabled selected>Select your blood group</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                </select>
+                <span class="helper-text">Select your blood group.</span>
+                <span class="error-message" id="bloodGroupError" style="display:none"></span>
+            </div>
+            <!-- Step 2 -->
+            <div class="form-step">
+                <label for="mobile">Mobile Number:</label>
+                <input type="tel" id="mobile" name="mobile" placeholder="Enter your mobile number" pattern="[0-9]{10}" required>
+                <span class="helper-text">Enter a 10-digit mobile number.</span>
+                <span class="error-message" id="mobileError" style="display:none"></span>
+                <label for="emergencyContact">Emergency Contact:</label>
+                <input type="tel" id="emergencyContact" name="emergencyContact" placeholder="Enter emergency contact number" pattern="[0-9]{10}" required>
+                <span class="helper-text">Enter a 10-digit emergency contact number.</span>
+                <span class="error-message" id="emergencyContactError" style="display:none"></span>
+            </div>
+            <!-- Step 3 -->
+            <div class="form-step">
+                <label for="allergies">Known Allergies:</label>
+                <textarea id="allergies" name="allergies" rows="3" placeholder="Enter any known allergies"></textarea>
+                <span class="helper-text">Leave blank if none.</span>
+                <span class="error-message" id="allergiesError" style="display:none"></span>
+                <label for="medicalHistory">Medical History:</label>
+                <textarea id="medicalHistory" name="medicalHistory" rows="3" placeholder="Enter any chronic conditions"></textarea>
+                <span class="helper-text">Leave blank if none.</span>
+                <span class="error-message" id="medicalHistoryError" style="display:none"></span>
+                <div class="success-message" id="qrSuccessMsg" style="display:none;text-align:center;margin-top:8px;font-weight:600;"></div>
+                <button type="submit">Generate QR Code</button>
+            </div>
+            <div class="navigation">
+                <button type="button" id="backBtn" disabled>Back</button>
+                <button type="button" id="nextBtn">Next</button>
+            </div>
+        </form>
+        <button class="panic-btn" id="panicBtn">Panic Mode: Send Emergency QR</button>
+        <div class="canvas-container">
+            <canvas id="qrCanvas" hidden></canvas>
+            <button id="downloadBtn" class="download-btn">Download QR Code</button>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Profile icon and dropdown logic
+        const profileIconBtn = document.getElementById('profileIconBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+        const profileHealthId = document.getElementById('profileHealthId');
+        const logoutBtn = document.getElementById('logoutBtn');
+        // Get healthid from localStorage
+        const healthid = localStorage.getItem('healthid');
+        if (!healthid) {
+            window.location.href = 'login.html';
+            return;
+        }
+        profileHealthId.textContent = healthid;
+        profileIconBtn.addEventListener('click', function() {
+            profileDropdown.style.display = profileDropdown.style.display === 'block' ? 'none' : 'block';
+            profileDropdown.classList.toggle('dark-mode', document.body.classList.contains('dark-mode'));
+        });
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!profileIconBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.style.display = 'none';
+            }
+        });
+        // Logout logic
+        logoutBtn.addEventListener('click', function() {
+            localStorage.removeItem('healthid');
+            window.location.href = 'login.html';
+        });
+        // Dark/Light mode toggle
+        const modeToggleBtn = document.getElementById('modeToggleBtn');
+        function setMode(mode) {
+            if (mode === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.querySelector('.container').classList.add('dark-mode');
+                modeToggleBtn.textContent = '🌙 Dark Mode';
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.querySelector('.container').classList.remove('dark-mode');
+                modeToggleBtn.textContent = '🌞 Light Mode';
+            }
+            localStorage.setItem('colorMode', mode);
+        }
+        modeToggleBtn.addEventListener('click', () => {
+            const current = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            setMode(current === 'dark' ? 'light' : 'dark');
+        });
+        setMode(localStorage.getItem('colorMode') || 'light');
+        // Stepper logic
+        const steps = document.querySelectorAll('.step');
+        const formSteps = document.querySelectorAll('.form-step');
+        let currentStep = 0;
+        function updateStepper() {
+            steps.forEach((step, idx) => {
+                step.classList.toggle('active', idx === currentStep);
+            });
+        }
+        updateStepper();
+        const nextBtn = document.getElementById('nextBtn');
+        const backBtn = document.getElementById('backBtn');
+        // Helper: validate all fields in current step
+        function validateStep(stepIdx) {
+            if (stepIdx === 0) {
+                return validateName() && validateDOB() && validateBloodGroup();
+            } else if (stepIdx === 1) {
+                return validateMobile() && validateEmergencyContact();
+            } else if (stepIdx === 2) {
+                let valid = true;
+                if (!allergiesInput.value.trim()) {
+                    allergiesError.textContent = 'This field is required.';
+                    allergiesError.style.display = 'block';
+                    valid = false;
+                } else {
+                    allergiesError.textContent = '';
+                    allergiesError.style.display = 'none';
+                }
+                if (!medicalHistoryInput.value.trim()) {
+                    medicalHistoryError.textContent = 'This field is required.';
+                    medicalHistoryError.style.display = 'block';
+                    valid = false;
+                } else {
+                    medicalHistoryError.textContent = '';
+                    medicalHistoryError.style.display = 'none';
+                }
+                return valid;
+            }
+            return true;
+        }
+        nextBtn.addEventListener('click', () => {
+            if (!validateStep(currentStep)) {
+                return;
+            }
+            if (currentStep < formSteps.length - 1) {
+                formSteps[currentStep].classList.remove('active');
+                currentStep++;
+                formSteps[currentStep].classList.add('active');
+                updateStepper();
+                if (currentStep === formSteps.length - 1) {
+                    nextBtn.textContent = 'Generate QR Code';
+                }
+                backBtn.disabled = false;
+            }
+        });
+        backBtn.addEventListener('click', () => {
+            if (currentStep > 0) {
+                formSteps[currentStep].classList.remove('active');
+                currentStep--;
+                formSteps[currentStep].classList.add('active');
+                updateStepper();
+                if (currentStep < formSteps.length - 1) {
+                    nextBtn.textContent = 'Next';
+                }
+                if (currentStep === 0) {
+                    backBtn.disabled = true;
+                }
+            }
+        });
+        // QR code generation logic
+        const qrForm = document.getElementById('qrForm');
+        const qrCanvas = document.getElementById('qrCanvas');
+        const downloadBtn = document.getElementById('downloadBtn');
+        // Real-time validation for QR form fields
+        const nameInput = document.getElementById('name');
+        const nameError = document.getElementById('nameError');
+        const dobInput = document.getElementById('dob');
+        const dobError = document.getElementById('dobError');
+        const ageDisplay = document.getElementById('ageDisplay');
+        const bloodGroupInput = document.getElementById('bloodGroup');
+        const bloodGroupError = document.getElementById('bloodGroupError');
+        const mobileInput = document.getElementById('mobile');
+        const mobileError = document.getElementById('mobileError');
+        const emergencyContactInput = document.getElementById('emergencyContact');
+        const emergencyContactError = document.getElementById('emergencyContactError');
+        const allergiesInput = document.getElementById('allergies');
+        const allergiesError = document.getElementById('allergiesError');
+        const medicalHistoryInput = document.getElementById('medicalHistory');
+        const medicalHistoryError = document.getElementById('medicalHistoryError');
+        const qrSuccessMsg = document.getElementById('qrSuccessMsg');
+        function calculateAge(dobString) {
+            const today = new Date();
+            const dob = new Date(dobString);
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            return age;
+        }
+        function enforceNameConstraint(e) {
+            const original = e.target.value;
+            const filtered = original.replace(/[^A-Za-z. ]/g, '');
+            if (original !== filtered) {
+                e.target.value = filtered;
+            }
+        }
+        function validateName() {
+            if (!nameInput.value.trim()) {
+                nameError.textContent = 'Name is required.';
+                nameError.style.display = 'block';
+                return false;
+            } else if (!/^[A-Za-z. ]+$/.test(nameInput.value)) {
+                nameError.textContent = 'Name can only contain alphabets, spaces, and periods.';
+                nameError.style.display = 'block';
+                return false;
+            } else {
+                nameError.textContent = '';
+                nameError.style.display = 'none';
+                return true;
+            }
+        }
+        function validateDOB() {
+            if (!dobInput.value) {
+                dobError.textContent = 'Date of birth is required.';
+                dobError.style.display = 'block';
+                ageDisplay.textContent = '';
+                return false;
+            }
+            const age = calculateAge(dobInput.value);
+            if (age < 1 || age > 120) {
+                dobError.textContent = 'Age must be between 1 and 120.';
+                dobError.style.display = 'block';
+                ageDisplay.textContent = '';
+                return false;
+            } else {
+                dobError.textContent = '';
+                dobError.style.display = 'none';
+                ageDisplay.textContent = `Age: ${age} years`;
+                return true;
+            }
+        }
+        function validateBloodGroup() {
+            if (!bloodGroupInput.value) {
+                bloodGroupError.textContent = 'Blood group is required.';
+                bloodGroupError.style.display = 'block';
+                return false;
+            } else {
+                bloodGroupError.textContent = '';
+                bloodGroupError.style.display = 'none';
+                return true;
+            }
+        }
+        let existingMobiles = new Set();
+        // Fetch existing users' mobile numbers on page load
+        fetch('http://localhost:3000/api/existing-users')
+            .then(res => res.json())
+            .then(data => {
+                (data.users || []).forEach(u => {
+                    if (u.mobile) existingMobiles.add(u.mobile);
+                });
+            });
+
+        function validateMobile() {
+            if (!/^[0-9]{10}$/.test(mobileInput.value)) {
+                mobileError.textContent = 'Enter a valid 10-digit mobile number.';
+                mobileError.style.display = 'block';
+                return false;
+            } else if (mobileInput.value === emergencyContactInput.value && emergencyContactInput.value.length === 10) {
+                mobileError.textContent = 'Mobile number and emergency contact cannot be the same.';
+                mobileError.style.display = 'block';
+                return false;
+            } else if (existingMobiles.has(mobileInput.value)) {
+                mobileError.textContent = 'This mobile number is already used by another user.';
+                mobileError.style.display = 'block';
+                return false;
+            } else {
+                mobileError.textContent = '';
+                mobileError.style.display = 'none';
+                return true;
+            }
+        }
+        function validateEmergencyContact() {
+            if (!/^[0-9]{10}$/.test(emergencyContactInput.value)) {
+                emergencyContactError.textContent = 'Enter a valid 10-digit emergency contact number.';
+                emergencyContactError.style.display = 'block';
+                return false;
+            } else if (mobileInput.value === emergencyContactInput.value && mobileInput.value.length === 10) {
+                emergencyContactError.textContent = 'Emergency contact and mobile number cannot be the same.';
+                emergencyContactError.style.display = 'block';
+                return false;
+            } else {
+                emergencyContactError.textContent = '';
+                emergencyContactError.style.display = 'none';
+                return true;
+            }
+        }
+        // Optionally, you can add more checks for allergies/medicalHistory if needed
+        if (nameInput) nameInput.addEventListener('input', enforceNameConstraint);
+        if (nameInput) nameInput.addEventListener('input', validateName);
+        if (dobInput) dobInput.addEventListener('change', validateDOB);
+        if (bloodGroupInput) bloodGroupInput.addEventListener('change', validateBloodGroup);
+        if (mobileInput) mobileInput.addEventListener('input', validateMobile);
+        if (emergencyContactInput) emergencyContactInput.addEventListener('input', validateEmergencyContact);
+        // Robustly pre-fill and disable name, DOB, and blood group for existing users
+        fetch('http://localhost:3000/api/all-user-data')
+            .then(res => res.json())
+            .then(data => {
+                const fullUser = (data.users || []).find(u => u.healthid === healthid);
+                if (fullUser) {
+                    if (nameInput) { nameInput.value = fullUser.name || ''; nameInput.disabled = true; }
+                    if (dobInput) { dobInput.value = fullUser.dob || ''; dobInput.disabled = true; }
+                    if (bloodGroupInput) { bloodGroupInput.value = fullUser.bloodGroup || ''; bloodGroupInput.disabled = true; }
+                }
+            });
+        // Helper to calculate age from DOB
+        function calculateAgeFromDOB(dob) {
+            if (!dob) return '';
+            const today = new Date();
+            const birth = new Date(dob);
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age;
+        }
+        // After fetching user details, show age in profile icon if DOB exists
+        fetch('http://localhost:3000/api/existing-users')
+            .then(res => res.json())
+            .then(data => {
+                const user = (data.users || []).find(u => u.healthid === healthid);
+                if (user) {
+                    fetch('http://localhost:3000/api/all-user-data')
+                        .then(res => res.json())
+                        .then(allData => {
+                            const fullUser = (allData.users || []).find(u => u.healthid === healthid);
+                            let dobValue = '';
+                            if (fullUser && fullUser.dob) {
+                                dobValue = fullUser.dob;
+                            } else if (user.dob) {
+                                dobValue = user.dob;
+                            }
+                            if (dobValue) {
+                                const age = calculateAgeFromDOB(dobValue);
+                                // Show age in profile icon (append to Health ID)
+                                const profileHealthId = document.getElementById('profileHealthId');
+                                if (profileHealthId) {
+                                    profileHealthId.textContent = `${healthid} (Age: ${age})`;
+                                }
+                                // Also show age in the form if needed
+                                if (ageDisplay) {
+                                    ageDisplay.textContent = `Age: ${age} years`;
+                                }
+                            }
+                        });
+                }
+            });
+        // Enhance QR form submission
+        qrForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form from reloading the page
+            console.log("Submit handler triggered");
+            console.log("QRCode:", QRCode);
+            qrSuccessMsg.style.display = 'none';
+            let valid = true;
+            if (!validateName()) valid = false;
+            if (!validateDOB()) valid = false;
+            if (!validateBloodGroup()) valid = false;
+            if (!validateMobile()) valid = false;
+            if (!validateEmergencyContact()) valid = false;
+            if (!allergiesInput.value.trim()) {
+                allergiesError.textContent = 'This field is required.';
+                allergiesError.style.display = 'block';
+                valid = false;
+            } else {
+                allergiesError.textContent = '';
+                allergiesError.style.display = 'none';
+            }
+            if (!medicalHistoryInput.value.trim()) {
+                medicalHistoryError.textContent = 'This field is required.';
+                medicalHistoryError.style.display = 'block';
+                valid = false;
+            } else {
+                medicalHistoryError.textContent = '';
+                medicalHistoryError.style.display = 'none';
+            }
+            if (!valid) {
+                return;
+            }
+            const formData = new FormData(qrForm);
+            let qrText = '';
+            let userData = {};
+            formData.forEach((value, key) => {
+                qrText += `${key}: ${value}\n`;
+                userData[key] = value;
+            });
+            userData.healthid = healthid; // Add healthid from localStorage
+            // Add DOB and age to QR
+            let dobForQR = '';
+            let ageForQR = '';
+            if (dobInput && dobInput.value) {
+                dobForQR = dobInput.value;
+                ageForQR = calculateAgeFromDOB(dobForQR);
+                qrText += `dob: ${dobForQR}\n`;
+                qrText += `age: ${ageForQR}\n`;
+            }
+            // Send user data to backend for saving
+            fetch('http://localhost:3000/api/details', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            }).then(res => res.json()).then(data => {
+                console.log('User data saved:', data);
+            }).catch(err => {
+                console.error('Failed to save user data:', err);
+            });
+            QRCode.toCanvas(qrCanvas, qrText, (error) => {
+                if (error) {
+                    console.error("QR generation error:", error);
+                } else {
+                    console.log("QR code generated successfully");
+                    qrCanvas.hidden = false;
+                    downloadBtn.style.display = 'inline-block';
+                }
+            });
+            qrSuccessMsg.textContent = 'QR Code generated successfully!';
+            qrSuccessMsg.style.display = 'block';
+        });
+        // Add Download and Print buttons below QR code
+        const canvasContainer = document.querySelector('.canvas-container');
+        const downloadDataBtn = document.createElement('button');
+        downloadDataBtn.textContent = 'Download My Data';
+        downloadDataBtn.className = 'download-btn';
+        downloadDataBtn.style.display = 'none';
+        const printDataBtn = document.createElement('button');
+        printDataBtn.textContent = 'Print My Data';
+        printDataBtn.className = 'download-btn';
+        printDataBtn.style.display = 'none';
+        canvasContainer.appendChild(downloadDataBtn);
+        canvasContainer.appendChild(printDataBtn);
+
+        function getUserDataText() {
+            let text = '';
+            text += `Health ID: ${healthid}\n`;
+            text += `Name: ${nameInput.value}\n`;
+            text += `DOB: ${dobInput.value}\n`;
+            text += `Age: ${calculateAgeFromDOB(dobInput.value)}\n`;
+            text += `Blood Group: ${bloodGroupInput.value}\n`;
+            text += `Mobile: ${mobileInput.value}\n`;
+            text += `Emergency Contact: ${emergencyContactInput.value}\n`;
+            text += `Allergies: ${allergiesInput.value}\n`;
+            text += `Medical History: ${medicalHistoryInput.value}\n`;
+            return text;
+        }
+        // Add jsPDF for PDF download
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        document.head.appendChild(script);
+
+        downloadDataBtn.addEventListener('click', () => {
+            const text = getUserDataText();
+            // Wait for jsPDF to load
+            if (window.jspdf || window.jspdf?.jsPDF) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.setFont('courier', 'normal');
+                doc.setFontSize(12);
+                const lines = doc.splitTextToSize(text, 180);
+                doc.text(lines, 10, 20);
+                doc.save(`My_Emergency_Data_${healthid}.pdf`);
+            } else {
+                alert('PDF library not loaded. Please try again.');
+            }
+        });
+        printDataBtn.addEventListener('click', () => {
+            const text = getUserDataText();
+            const printWindow = window.open('', '', 'width=600,height=600');
+            printWindow.document.write('<pre>' + text + '</pre>');
+            printWindow.document.close();
+            printWindow.print();
+        });
+        // Show buttons after QR is generated
+        qrForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form from reloading the page
+            console.log("Submit handler triggered");
+            console.log("QRCode:", QRCode);
+            qrSuccessMsg.style.display = 'none';
+            let valid = true;
+            if (!validateName()) valid = false;
+            if (!validateDOB()) valid = false;
+            if (!validateBloodGroup()) valid = false;
+            if (!validateMobile()) valid = false;
+            if (!validateEmergencyContact()) valid = false;
+            if (!allergiesInput.value.trim()) {
+                allergiesError.textContent = 'This field is required.';
+                allergiesError.style.display = 'block';
+                valid = false;
+            } else {
+                allergiesError.textContent = '';
+                allergiesError.style.display = 'none';
+            }
+            if (!medicalHistoryInput.value.trim()) {
+                medicalHistoryError.textContent = 'This field is required.';
+                medicalHistoryError.style.display = 'block';
+                valid = false;
+            } else {
+                medicalHistoryError.textContent = '';
+                medicalHistoryError.style.display = 'none';
+            }
+            if (!valid) {
+                return;
+            }
+            const formData = new FormData(qrForm);
+            let qrText = '';
+            let userData = {};
+            formData.forEach((value, key) => {
+                qrText += `${key}: ${value}\n`;
+                userData[key] = value;
+            });
+            userData.healthid = healthid; // Add healthid from localStorage
+            // Add DOB and age to QR
+            let dobForQR = '';
+            let ageForQR = '';
+            if (dobInput && dobInput.value) {
+                dobForQR = dobInput.value;
+                ageForQR = calculateAgeFromDOB(dobForQR);
+                qrText += `dob: ${dobForQR}\n`;
+                qrText += `age: ${ageForQR}\n`;
+            }
+            // Send user data to backend for saving
+            fetch('http://localhost:3000/api/details', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            }).then(res => res.json()).then(data => {
+                console.log('User data saved:', data);
+            }).catch(err => {
+                console.error('Failed to save user data:', err);
+            });
+            QRCode.toCanvas(qrCanvas, qrText, (error) => {
+                if (error) {
+                    console.error("QR generation error:", error);
+                } else {
+                    console.log("QR code generated successfully");
+                    qrCanvas.hidden = false;
+                    downloadBtn.style.display = 'inline-block';
+                    downloadDataBtn.style.display = 'inline-block';
+                    printDataBtn.style.display = 'inline-block';
+                }
+            });
+            qrSuccessMsg.textContent = 'QR Code generated successfully!';
+            qrSuccessMsg.style.display = 'block';
+        });
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'EmergencyQRCode.png';
+            link.href = qrCanvas.toDataURL();
+            link.click();
+        });
+        // Panic button logic
+        const panicBtn = document.getElementById('panicBtn');
+        panicBtn.addEventListener('click', () => {
+            // Get name and emergency contact from form
+            const name = nameInput.value.trim();
+            const emergencyContact = emergencyContactInput.value.trim();
+            if (!name || !emergencyContact) {
+                alert('Please fill in your name and emergency contact before using Panic Mode.');
+                return;
+            }
+            fetch('http://localhost:3000/api/panic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, emergencyContact })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Emergency alert sent to your emergency contact!');
+                } else {
+                    alert('Failed to send emergency alert.');
+                }
+            })
+            .catch(() => {
+                alert('Failed to send emergency alert.');
+            });
+        });
+        });
+    </script>
+</body>
+</html>
